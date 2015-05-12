@@ -1,3 +1,6 @@
+! This program compares two methods for matrix inversion.
+! The compared quantities are the time and the accuracy of some
+! random element.
 program fortran_cuda_playground
 use subroutines
 implicit none
@@ -9,6 +12,7 @@ integer,parameter :: dim=2048
 integer :: i,j
 real :: cpu_time_start, cpu_time_stop
 
+! generate matrices
 allocate(A(dim,dim))
 allocate(A_cpu(dim,dim))
 A=0
@@ -18,9 +22,8 @@ do i=1,dim
     A(i,j)=x
     A_cpu(i,j)=x
   end do
-  end do
-!call write_matrix(A)
-!call write_matrix(A_cpu)
+end do
+! do the inversion with lapack and measure the time
 call cpu_time(cpu_time_start)
 call inv_mat(A,'gpu')
 call cpu_time(cpu_time_stop)
@@ -29,6 +32,7 @@ write(*,*) "GPU time:"
 write(*,*) cpu_time_stop- cpu_time_start
 write(*,*) "GPU result:"
 write(*,*) A(3,4)
+! do the inversion with the GPU
 call cpu_time(cpu_time_start)
 call inv_mat(A_cpu,'cpu')
 call cpu_time(cpu_time_stop)
@@ -37,8 +41,6 @@ write(*,*) cpu_time_stop- cpu_time_start
 write(*,*) "CPU result:"
 write(*,*) A_cpu(3,4)
 
-!call write_matrix(A)
-!call write_matrix(A_cpu)
 
 
 end program
