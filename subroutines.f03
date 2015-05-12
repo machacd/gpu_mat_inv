@@ -1,8 +1,11 @@
+! This file containts auxiliary subroutines for the fortran part of the
+! project.
+
 module subroutines
-
 contains
-subroutine write_matrix(matrix)
 
+subroutine write_matrix(matrix)
+! prints out matrix
 
 real :: matrix(:,:)
 integer :: i
@@ -15,6 +18,7 @@ end do
 end subroutine
 
 subroutine inv_mat(matrix,art) 
+! matrix inversion with lapack
 INTEGER :: i,m
 real :: matrix(:,:)
 real,ALLOCATABLE :: matrix_aug(:,:)
