@@ -63,6 +63,8 @@ __global__ void storeRows(float* A, float* d_rowk, float* d_rowi, int* rightColu
 
 __global__ void workRow(float* A, int* rightColumnIndices, int dim, int i){
 	/* divides the whole row by pivot's value */
+	/* Pivot value has to be stored in a shared memory, in order to be accessed */
+	/* by all threads. */
 	__shared__ float Aii;
 	__shared__ float rowi[BLOCK_HEIGHT]; 
 	Aii=A[i*dim+i];
@@ -92,6 +94,7 @@ __global__ void workRows(float* A, int* rightColumnIndices, int dim, int ipiv){
 	colpiv[i0]=A[ipiv*dim+i];
 	colj[i0]=A[(j+ipiv+1)*dim+i];
 	colj_piv=A[(j+ipiv+1)*dim+ipiv];
+	/* Do not apply this procedure on the pivot line. */
 	if (i != ipiv){
 		colj[i0]=colj[i0]-colj_piv*colpiv[i0];
 	}
@@ -134,11 +137,18 @@ extern "C" void kernel_wrapper_(float* A, int* dim){
 	gpuErrchk( cudaMemcpy(d_A,A, size,cudaMemcpyHostToDevice) );
 	cublasCreate(&handle);
 
-	/* define dimensions */	
+	/* define dimensions of blocks and grids to be used by GPU*/	
+
+	/* We start by dividng the whole line by the pivot. This is also */
+ 	/* done in parallel. Grid is the whole line and a block is part of the line. */
 	dim3 dimBlockRow(BLOCK_HEIGHT,1,1);
 	dim3 dimGridRow(*dim/BLOCK_HEIGHT,1,1);
+	/* Here we define dimensions for procedures that subtract the pivot line from */
+	/* each line of the matrix. Grid is the whole matrix and blocks are now parts of */ 
+	/* COLUMNS! */
 	dim3 dimBlockCol(BLOCK_HEIGHT,1,1);
 	dim3 dimGridCol(*dim,*dim/BLOCK_HEIGHT,1);
+
 	dim3 dimBlockPiv(BLOCK_HEIGHT,1,1);
 	dim3 dimGridPiv(*dim/BLOCK_HEIGHT,1,1);
 	dim3 dimBlockStoreRow(BLOCK_HEIGHT,1,1);
@@ -157,6 +167,7 @@ extern "C" void kernel_wrapper_(float* A, int* dim){
 		} else{
         	max_idx=i+1;
 		}
+		/* important part of the code */
 		workRow<<<dimGridRow,dimBlockRow>>>(d_A,d_indices,*dim,i);
 		workRows<<<dimGridCol,dimBlockCol>>>(d_A,d_indices,*dim,i);
 	}
